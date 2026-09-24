@@ -1,9 +1,20 @@
-// The host phone's game brain. Other phones only send inputs and render state.
+// The host's game brain. Other phones only send inputs and render state.
+// The host is either a playing phone or a big screen (spectator) that only
+// runs the game and watches.
 
 import {
-  type Anchor, type LobbyState, type Settings, type Shot, type ToHost, type ToPlayer,
-  resolveRound, SHOT_WINDOW_MS,
+  type Anchor, type LivePose, type LobbyState, type Settings, type Shot, type ToHost, type ToPlayer,
+  resolveRound, SHOT_WINDOW_MS, standingAngles,
 } from './game'
+
+/** What a big screen needs to draw the live arena. */
+export interface LiveView {
+  poses: Record<string, LivePose>
+  /** Where each duelist stands, once the walk has started. */
+  angles: Record<string, number> | null
+  /** Reaction time (ms) of every shot fired so far this round. */
+  reactions: Record<string, number>
+}
 
 export const HOLSTER_MS = 3000
 export const STEP_MS = 1000
@@ -16,9 +27,14 @@ export class HostEngine {
   private roundIds: string[] = []
   private timer: ReturnType<typeof setTimeout> | undefined
   private send: (pid: string, msg: ToPlayer) => void
+  private watcher?: (msg: ToPlayer) => void
+  private poses: Record<string, LivePose> = {}
+  private angles: Record<string, number> | null = null
 
-  constructor(code: string, send: (pid: string, msg: ToPlayer) => void) {
+  /** `watcher` sees every broadcast; set it when the host is a big screen. */
+  constructor(code: string, send: (pid: string, msg: ToPlayer) => void, watcher?: (msg: ToPlayer) => void) {
     this.send = send
+    this.watcher = watcher
     this.state = {
       code,
       phase: 'lobby',
@@ -27,10 +43,13 @@ export class HostEngine {
       settings: { steps: 5, tolerance: 20 },
       duelists: [],
       calibrated: [],
+      fired: [],
+      watching: !!watcher,
     }
   }
 
   private broadcast(msg: ToPlayer, only?: string[]) {
+    this.watcher?.(msg)
     for (const p of this.state.players) {
       if (p.connected && (!only || only.includes(p.id))) this.send(p.id, msg)
     }
@@ -71,7 +90,15 @@ export class HostEngine {
       case 'shot': {
         if (s.phase !== 'duel' || msg.round !== s.round || !this.roundIds.includes(pid) || pid in this.shots) return
         this.shots[pid] = msg.shot
+        if (msg.shot) {
+          s.fired = [...s.fired, pid]
+          this.pushLobby()
+        }
         if (this.roundIds.every(id => id in this.shots)) this.resolve()
+        break
+      }
+      case 'pose': {
+        if (s.watching) this.poses[pid] = { ...msg.pose, t: performance.now() }
         break
       }
     }
@@ -120,6 +147,8 @@ export class HostEngine {
     this.state.round++
     this.state.phase = 'calibrate'
     this.state.calibrated = []
+    this.state.fired = []
+    this.angles = null
     this.state.duelists = this.roundIds
     this.pushLobby()
     this.broadcast({ t: 'calibrate', round: this.state.round }, this.roundIds)
@@ -129,6 +158,7 @@ export class HostEngine {
     const s = this.state
     s.phase = 'duel'
     const drawDelay = 1500 + Math.random() * 3000
+    this.angles = standingAngles(this.roundIds, this.anchors)
     this.pushLobby()
     this.broadcast({ t: 'go', round: s.round, steps: s.settings.steps, drawDelay }, this.roundIds)
     const total = HOLSTER_MS + s.settings.steps * STEP_MS + TURN_MS + drawDelay + SHOT_WINDOW_MS + 4000
@@ -152,6 +182,12 @@ export class HostEngine {
     this.state.calibrated = []
     this.state.players = this.state.players.filter(p => p.connected || p.wins)
     this.pushLobby()
+  }
+
+  live(): LiveView {
+    const reactions: Record<string, number> = {}
+    for (const [id, shot] of Object.entries(this.shots)) if (shot) reactions[id] = shot.reaction
+    return { poses: { ...this.poses }, angles: this.angles, reactions }
   }
 
   dispose() { clearTimeout(this.timer) }

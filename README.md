@@ -33,6 +33,19 @@ Caddy provides the HTTPS certificate. To use a different domain, add it to
 
 ---
 
+### Big screen mode 📺
+
+Open the game on a laptop or TV and tap **Host on a big screen**. That screen
+runs the duel (code, QR, rules, START) but doesn't play. While it hosts, every
+phone streams its direction and tilt to it about 10 times a second, so it shows:
+
+- live dials for each phone's direction and tilt, and whether it's holstered or raised
+- the walk countdown and DRAW!, with sound
+- a top-down arena with each player's aim arrow and hit cone (green = on target)
+- who fired and how fast, then the hit and miss lines, the winner and a scoreboard
+
+---
+
 One phone taps **Start a new game** and shows a code + QR. Others scan or type the code.
 
 ## How it works

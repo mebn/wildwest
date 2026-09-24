@@ -22,11 +22,11 @@ export default function Home({ onJoin }: { onJoin: (r: JoinRequest) => void }) {
   const [code, setCode] = useState(roomParam)
   const cleanName = name.trim().slice(0, 14)
 
-  const go = (role: 'host' | 'client') => {
+  const go = (role: 'host' | 'client', spectate = false) => {
     unlockAudio()
     localStorage.setItem('wwduel-name', cleanName)
     localStorage.setItem('wwduel-emoji', emoji)
-    onJoin({ role, code: role === 'client' ? code : undefined, name: cleanName || 'Stranger', emoji })
+    onJoin({ role, code: role === 'client' ? code : undefined, name: cleanName || 'Stranger', emoji, spectate })
   }
 
   const exitInvite = () => {
@@ -74,6 +74,10 @@ export default function Home({ onJoin }: { onJoin: (r: JoinRequest) => void }) {
       ) : (
         <>
           <Button big color="orange" onClick={() => go('host')}>Start a new game ⭐</Button>
+          <Button color="blue" onClick={() => go('host', true)}>
+            📺 Host on a big screen
+            <small className="btn-sub">This screen runs the duel and shows everything live. Players use phones.</small>
+          </Button>
           <div className="or">or join a friend</div>
           <Bubble className="join-card row">
             <input

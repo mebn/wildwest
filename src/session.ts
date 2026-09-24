@@ -1,9 +1,9 @@
-// Connects this phone to a game, either as the host (runs HostEngine locally)
-// or as a player talking to the host over WebRTC.
+// Connects this device to a game: as the host (runs HostEngine locally, either
+// playing on a phone or as a big screen that only watches), or as a player.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LobbyState, RoundResult, Settings, ToHost, ToPlayer } from './game'
-import { HostEngine } from './host'
+import { HostEngine, type LiveView } from './host'
 import { makeCode, openClient, openHost, type ClientLink, type HostLink } from './net'
 
 export type Status = 'connecting' | 'online' | 'lost' | 'error'
@@ -21,6 +21,8 @@ function myPid() {
 
 export interface Session {
   role: 'host' | 'client'
+  /** Big-screen host: runs the game but doesn't play. */
+  spectator: boolean
   pid: string
   status: Status
   error: string | null
@@ -33,6 +35,7 @@ export interface Session {
     canStart: boolean
     setSettings: (s: Partial<Settings>) => void
     backToLobby: () => void
+    live: () => LiveView
   }
   leave: () => void
 }
@@ -42,6 +45,7 @@ export interface JoinRequest {
   code?: string
   name: string
   emoji: string
+  spectate?: boolean
 }
 
 export function useSession(req: JoinRequest | null, onLeave: () => void): Session | null {
@@ -53,6 +57,7 @@ export function useSession(req: JoinRequest | null, onLeave: () => void): Sessio
   const [result, setResult] = useState<RoundResult | null>(null)
   const engineRef = useRef<HostEngine | null>(null)
   const sendRef = useRef<(msg: ToHost) => void>(() => {})
+  const send = useCallback((msg: ToHost) => sendRef.current(msg), [])
 
   const deliver = useCallback((msg: ToPlayer) => {
     if (msg.t === 'lobby') setLobby(msg.state)
@@ -74,13 +79,14 @@ export function useSession(req: JoinRequest | null, onLeave: () => void): Sessio
         const engine = new HostEngine(code, (to, msg) => {
           if (to === pid) deliver(msg)
           else { const c = pidToConn.get(to); if (c) link?.send(c, msg) }
-        })
+        }, req.spectate ? deliver : undefined)
         engineRef.current = engine
         link = openHost(code, {
           open: () => {
             if (disposed) return
             setStatus('online')
-            engine.handle(pid, join)
+            if (req.spectate) deliver({ t: 'lobby', state: engine.state })
+            else engine.handle(pid, join)
           },
           data: (connId, msg) => {
             if (msg.t === 'join') {
@@ -150,18 +156,20 @@ export function useSession(req: JoinRequest | null, onLeave: () => void): Sessio
   const engine = engineRef.current
   return {
     role: req.role,
+    spectator: req.role === 'host' && !!req.spectate,
     pid,
     status,
     error,
     lobby,
     cue,
     result,
-    send: msg => sendRef.current(msg),
+    send,
     host: req.role === 'host' && engine ? {
       start: () => engine.start(),
       canStart: engine.canStart(),
       setSettings: s => engine.setSettings(s),
       backToLobby: () => engine.backToLobby(),
+      live: () => engine.live(),
     } : undefined,
     leave: onLeave,
   }

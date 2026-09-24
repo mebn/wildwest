@@ -290,3 +290,71 @@ p { margin: 6px 0; line-height: 1.4; }
 @keyframes fade-in { from { opacity: 0; } }
 /* Leave room so the ?sim panel never covers the page's last button. */
 .app:has(.sim) .stage { padding-bottom: 150px; }
+
+/* ---------- Big screen (spectator host) ---------- */
+.stage.wide { max-width: 1280px; }
+.spec-header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between; padding-left: 90px; }
+.spec-title { margin: 0; font-size: 2.2rem; color: #fff; -webkit-text-stroke: 2px var(--brown); paint-order: stroke fill; text-shadow: 0 4px 0 var(--brown); }
+.spec-title span { color: var(--yellow); }
+.spec-code { background: var(--cream); border: 4px solid var(--brown); border-radius: 999px; padding: 6px 18px; box-shadow: 0 5px 0 var(--brown); font-size: 1.2rem; }
+.spec-code b { font-family: 'Lilita One'; letter-spacing: 4px; font-size: 1.6rem; color: var(--orange); }
+.spec-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.spec-main, .spec-side { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+@media (max-width: 900px) { .spec-grid { grid-template-columns: 1fr; } .spec-header { padding-left: 0; padding-top: 8px; } }
+.spec-join { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+.spec-qr svg { background: #fff; padding: 12px; border-radius: 20px; border: 4px solid var(--brown); display: block; max-width: 100%; height: auto; }
+.url { word-break: break-all; }
+.spec-stage { text-align: center; min-height: 130px; padding: 10px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.spec-big { font-size: 3rem; margin: 0; }
+.spec-stage .step-num { font-size: 6rem; }
+.spec-stage .draw-word { font-size: 5rem; }
+.spec-stage .big-emoji { font-size: 56px; }
+.spec-main .result-banner { padding: 10px 20px; }
+.spec-main .result-banner .big-emoji { font-size: 56px; }
+.spec-main .result-banner h1 { font-size: 2.4rem; margin: 0; }
+.spec-count { font-family: 'Lilita One'; font-size: 2rem; color: var(--orange); }
+.spec-draw { background: var(--red); }
+.arena-card { padding: 12px; }
+.arena { width: 100%; max-height: calc(100dvh - 380px); min-height: 280px; display: block; margin: 0 auto; overflow: hidden; }
+.arena-ground { fill: #f7c983; stroke: var(--brown); stroke-width: 2; }
+.arena-ring { fill: none; stroke: var(--sand-dark); stroke-width: 1.5; stroke-dasharray: 3 4; }
+.arena-walk { stroke: var(--sand-dark); stroke-width: 1; stroke-dasharray: 1 3; }
+.arena-start { font-size: 12px; text-anchor: middle; dominant-baseline: central; }
+.arena-badge { fill: #fff; stroke: var(--brown); stroke-width: 2; }
+.arena-emoji { font-size: 17px; text-anchor: middle; dominant-baseline: central; }
+.arena-name { font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 8px; fill: var(--brown); text-anchor: middle; }
+.arena-mark { font-size: 11px; text-anchor: middle; dominant-baseline: central; }
+.arena-time { font-family: 'Lilita One'; font-size: 8px; fill: var(--brown); text-anchor: middle; }
+.arena-player.dead .arena-badge { fill: #ddd; }
+.arena-player.dead .arena-emoji { opacity: .5; }
+.arena-player.winner .arena-badge { fill: var(--yellow); }
+.aim-cone { fill: var(--orange); opacity: .22; }
+.aim-line { stroke: var(--brown); stroke-width: 3; stroke-linecap: round; }
+.aim.lowered .aim-line { opacity: .35; }
+.aim.on-target .aim-cone { fill: var(--green); opacity: .35; }
+.aim.on-target .aim-line { stroke: var(--green-dark); }
+.shot-line { stroke-width: 3; stroke-linecap: round; }
+.shot-line.hit { stroke: var(--red); }
+.shot-line.miss { stroke: var(--muted); stroke-dasharray: 5 5; }
+.live-cards { display: flex; flex-direction: column; gap: 10px; }
+.live-card {
+  display: flex; align-items: center; gap: 12px; background: #fff; border: 3px solid #f0d9b5; border-radius: 22px; padding: 8px 12px;
+  animation: pop-in .35s ease-out; transition: border-color .2s;
+}
+.live-card.offline { opacity: .45; }
+.live-card.pose-raised { border-color: var(--green); }
+.live-card.pose-holstered { border-color: var(--blue); }
+.live-info { flex: 1; min-width: 0; }
+.gauges { display: flex; gap: 8px; }
+.gauge { display: flex; flex-direction: column; align-items: center; }
+.gauge-label { font-size: .75rem; font-weight: 700; white-space: nowrap; }
+.gauge-label em { font-weight: 400; color: var(--muted); }
+.dial { width: 48px; height: 48px; }
+.dial-face { fill: #fff3dd; stroke: var(--brown); stroke-width: 2; }
+.dial-needle { transition: transform .1s linear; }
+.dial-needle polygon { fill: var(--red); stroke: var(--brown); stroke-width: 1; }
+.dial-hub { fill: var(--brown); }
+.tilt { width: 18px; height: 48px; }
+.tilt-tube { fill: #fff; stroke: var(--brown); stroke-width: 1.5; }
+.tilt-zone { fill: #dcffe4; }
+.tilt-dot { fill: var(--orange); stroke: var(--brown); stroke-width: 1; transition: cy .1s linear; }

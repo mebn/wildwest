@@ -27,6 +27,20 @@ export interface LobbyState {
   duelists: string[]
   /** Ids of players whose calibration has arrived this round. */
   calibrated: string[]
+  /** Ids of players who have pulled the trigger this round. */
+  fired: string[]
+  /** A big screen is hosting, so phones stream their live pose to it. */
+  watching: boolean
+}
+
+/** Live phone pose, streamed to a big-screen host. */
+export interface LivePose {
+  heading: number
+  compass: number | null
+  elevation: number
+  /** Turn since this round's calibration, or null before calibrating. */
+  turn: number | null
+  t: number
 }
 
 export interface Anchor {
@@ -54,6 +68,8 @@ export interface ShotReport {
   hit: boolean
   /** Degrees off from the nearest living target. */
   missBy: number | null
+  /** Shot direction in the arena frame (compass-style degrees). */
+  aim: number | null
   reason: 'hit' | 'miss' | 'ground' | 'too-late' | 'no-shot'
 }
 
@@ -63,6 +79,8 @@ export interface RoundResult {
   shots: ShotReport[]
   /** Who got hit by whom. */
   hitBy: Record<string, string>
+  /** Where each duelist stood: angle around the start point. */
+  positions: Record<string, number>
 }
 
 // Messages between phones.
@@ -71,6 +89,7 @@ export type ToHost =
   | { t: 'ready'; ready: boolean }
   | { t: 'anchor'; round: number; anchor: Anchor }
   | { t: 'shot'; round: number; shot: Shot | null }
+  | { t: 'pose'; pose: Omit<LivePose, 't'> }
 
 export type ToPlayer =
   | { t: 'lobby'; state: LobbyState }
@@ -107,7 +126,7 @@ export function standingAngles(ids: string[], anchors: Record<string, Anchor>): 
   return out
 }
 
-function bearing(from: number, to: number) {
+export function bearing(from: number, to: number) {
   // Points on a unit circle at compass angles; x = east, y = north.
   const r = Math.PI / 180
   const dx = Math.sin(to * r) - Math.sin(from * r)
@@ -136,11 +155,11 @@ export function resolveRound(
     const shot = shots[id]!
     const base = { shooter: id, reaction: Math.round(shot.reaction) }
     if (dead.has(id)) {
-      reports.push({ ...base, target: null, hit: false, missBy: null, reason: 'too-late' })
+      reports.push({ ...base, target: null, hit: false, missBy: null, aim: null, reason: 'too-late' })
       continue
     }
     if (Math.abs(shot.elevation) > MAX_ELEVATION) {
-      reports.push({ ...base, target: null, hit: false, missBy: null, reason: 'ground' })
+      reports.push({ ...base, target: null, hit: false, missBy: null, aim: null, reason: 'ground' })
       continue
     }
     // Direction of the shot in the shared "circle" frame.
@@ -156,13 +175,13 @@ export function resolveRound(
       dead.add(best)
       hitBy[best] = id
       hitters.add(id)
-      reports.push({ ...base, target: best, hit: true, missBy: Math.round(bestErr), reason: 'hit' })
+      reports.push({ ...base, target: best, hit: true, missBy: Math.round(bestErr), aim, reason: 'hit' })
     } else {
-      reports.push({ ...base, target: best, hit: false, missBy: best ? Math.round(bestErr) : null, reason: 'miss' })
+      reports.push({ ...base, target: best, hit: false, missBy: best ? Math.round(bestErr) : null, aim, reason: 'miss' })
     }
   }
   for (const id of ids) {
-    if (!shots[id]) reports.push({ shooter: id, reaction: null, target: null, hit: false, missBy: null, reason: 'no-shot' })
+    if (!shots[id]) reports.push({ shooter: id, reaction: null, target: null, hit: false, missBy: null, aim: null, reason: 'no-shot' })
   }
 
   const outcomes: Record<string, Outcome> = {}
@@ -173,5 +192,5 @@ export function resolveRound(
     else if (hitters.has(id) || alive.length === 1) outcomes[id] = 'winner'
     else outcomes[id] = 'survivor'
   }
-  return { round, outcomes, shots: reports, hitBy }
+  return { round, outcomes, shots: reports, hitBy, positions: angles }
 }

@@ -70,7 +70,7 @@ export default function Results({ session, lobby, result }: { session: Session; 
   )
 }
 
-function ShotLine({ s, byId }: { s: ShotReport; byId: Record<string, { name: string; emoji: string }> }) {
+export function ShotLine({ s, byId }: { s: ShotReport; byId: Record<string, { name: string; emoji: string }> }) {
   const who = byId[s.shooter]
   const target = s.target ? byId[s.target] : null
   const time = s.reaction != null ? <span className="time">{(s.reaction / 1000).toFixed(2)}s</span> : null
@@ -91,7 +91,7 @@ function ShotLine({ s, byId }: { s: ShotReport; byId: Record<string, { name: str
   )
 }
 
-function Confetti() {
+export function Confetti() {
   const bits = useMemo(() => Array.from({ length: 40 }, (_, i) => ({
     left: Math.random() * 100,
     delay: Math.random() * 1.5,

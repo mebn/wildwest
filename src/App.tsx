@@ -1,6 +1,6 @@
-import { useCallback, useRef, useState } from 'react'
-import type { Anchor } from './game'
-import { SIM } from './motion'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { norm180, type Anchor } from './game'
+import { getPose, sensorsStarted, SIM } from './motion'
 import { useSession, type JoinRequest } from './session'
 import Home, { clearRoomParam } from './screens/Home'
 import Lobby from './screens/Lobby'
@@ -8,6 +8,7 @@ import Calibrate from './screens/Calibrate'
 import Duel from './screens/Duel'
 import Results from './screens/Results'
 import SimPanel from './screens/SimPanel'
+import Spectator from './screens/Spectator'
 import { sfx } from './sound'
 import { Bubble, Button } from './ui'
 
@@ -18,11 +19,32 @@ export default function App() {
   const anchor = useRef<Anchor | null>(null)
   // Hide the exit button mid-duel so a stray tap in the pocket can't quit.
   const duelRunning = session?.lobby?.phase === 'duel' && session.lobby.duelists.includes(session.pid)
+  const phase = session?.lobby?.phase
+
+  // A new round needs a fresh calibration, so forget the old direction.
+  useEffect(() => { if (phase === 'lobby') anchor.current = null }, [phase])
+
+  // When a big screen is hosting, stream this phone's aim and tilt to it.
+  const watching = !!session?.lobby?.watching && !session.spectator
+  const send = session?.send
+  useEffect(() => {
+    if (!watching || !send) return
+    const id = setInterval(() => {
+      if (!sensorsStarted()) return
+      const p = getPose()
+      const a = anchor.current
+      send({
+        t: 'pose',
+        pose: { heading: p.heading, compass: p.compass, elevation: p.elevation, turn: a ? norm180(p.heading - a.local) : null },
+      })
+    }, 100)
+    return () => clearInterval(id)
+  }, [watching, send])
 
   return (
     <div className="app">
       <Sky />
-      <main className={`stage ${session || new URLSearchParams(location.search).has('room') ? 'with-exit' : ''}`}>{screen()}</main>
+      <main className={`stage ${session?.spectator ? 'wide' : ''} ${session || new URLSearchParams(location.search).has('room') ? 'with-exit' : ''}`}>{screen()}</main>
       {session && !duelRunning && <ExitButton isHost={session.role === 'host'} onExit={session.leave} />}
       {SIM && <SimPanel />}
     </div>
@@ -50,6 +72,7 @@ export default function App() {
         </Bubble>
       )
     }
+    if (session.spectator) return <Spectator session={session} lobby={lobby} />
     const inRound = lobby.duelists.includes(session.pid)
     const banner = status === 'lost' ? <div className="lost-banner">📡 Lost connection, reconnecting…</div> : null
 
