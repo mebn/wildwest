@@ -1,7 +1,7 @@
 // A tiny message relay built into the Vite dev/preview server.
 //
-// The phones already load the page from this server over the LAN, so they can
-// always reach it, even on Wi-Fi that blocks phone-to-phone traffic. The relay
+// The phones already load the page from this machine, so they can always
+// reach it, even on Wi-Fi that blocks phone-to-phone traffic. The relay
 // holds no game logic: it only forwards messages between the host phone and
 // the players in a room.
 
@@ -10,7 +10,7 @@ import type { Duplex } from 'node:stream'
 import type { Plugin } from 'vite'
 import { WebSocket, WebSocketServer } from 'ws'
 
-const PATH = '/ww-relay'
+export const PATH = '/ww-relay'
 const HOST_GRACE_MS = 60_000
 
 interface Room {
@@ -19,7 +19,8 @@ interface Room {
   expire?: ReturnType<typeof setTimeout>
 }
 
-export function relay(): Plugin {
+/** Adds the relay's WebSocket endpoint to an existing HTTP(S) server. */
+export function createRelay() {
   const rooms = new Map<string, Room>()
   const wss = new WebSocketServer({ noServer: true })
   const alive = new WeakMap<WebSocket, boolean>()
@@ -109,6 +110,11 @@ export function relay(): Plugin {
     })
   }
 
+  return { attach }
+}
+
+export function relay(): Plugin {
+  const { attach } = createRelay()
   return {
     name: 'wild-west-relay',
     configureServer(server) {

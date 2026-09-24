@@ -288,3 +288,5 @@ p { margin: 6px 0; line-height: 1.4; }
 .modal-actions { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
 .modal-actions .btn { flex: 1; }
 @keyframes fade-in { from { opacity: 0; } }
+/* Leave room so the ?sim panel never covers the page's last button. */
+.app:has(.sim) .stage { padding-bottom: 150px; }

@@ -15,6 +15,24 @@ Vite prints a `Network:` address like `https://192.168.1.20:5173`. Open it on
 every phone (same Wi-Fi) and accept the self-signed certificate warning.
 HTTPS is required for motion sensors.
 
+### Behind Caddy (or another HTTPS reverse proxy)
+
+```sh
+npm run build
+npm run preview        # plain HTTP on port 4173, includes the relay
+```
+
+```caddyfile
+wildwest.mebn.dev {
+	reverse_proxy localhost:4173
+}
+```
+
+Caddy provides the HTTPS certificate. To use a different domain, add it to
+`preview.allowedHosts` in `vite.config.ts`.
+
+---
+
 One phone taps **Start a new game** and shows a code + QR. Others scan or type the code.
 
 ## How it works
