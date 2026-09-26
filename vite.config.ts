@@ -13,5 +13,5 @@ import { relay } from './relay.ts'
 export default defineConfig(({ isPreview }) => ({
   plugins: [react(), ...(isPreview ? [] : [basicSsl()]), relay()],
   server: { host: true, port: 5173 },
-  preview: { host: true, port: 4173, allowedHosts: ['wildwest.mebn.dev'] },
+  preview: { host: true, port: 4173 },
 }))
